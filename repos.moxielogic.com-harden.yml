@@ -86,10 +86,10 @@
       ignore_errors: yes
 
     - name: Run el7 repo container
-      command: podman run -d --name moxielogic-repos-el7 -p 7007:8443 -v /etc/pki/tls:/etc/pki/tls atgreen/moxielogic-repos-el7:latest
+      command: podman run -d --name moxielogic-repos-el7 -p 7007:8443 -v /etc/httpd/tls:/etc/httpd/tls atgreen/moxielogic-repos-el7:latest
 
     - name: Run deb repo container
-      command: podman run -d --name moxielogic-repos-deb -p 7114:8443 -v /etc/pki/tls:/etc/pki/tls atgreen/moxielogic-repos-deb:latest
+      command: podman run -d --name moxielogic-repos-deb -p 7114:8443 -v /etc/httpd/tls:/etc/httpd/tls atgreen/moxielogic-repos-deb:latest
 
     - name: Show running containers
       command: podman ps
