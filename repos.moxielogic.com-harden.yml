@@ -1,0 +1,109 @@
+---
+- name: Regular maintenance tasks
+  hosts: all
+  gather_facts: true
+
+  tasks:
+    - name: Make sure we have important packages
+      yum:
+        name:
+          - selinux-policy-targeted
+          - podman
+          - git
+          - cmake
+          - make
+          - python3-pyyaml
+          - python3-jinja2
+          - openscap-scanner
+        state: present
+
+    - name: Update all packages
+      yum: name='*' state=latest
+      register: update
+
+    - name: copy motd file
+      copy: src=motd dest=/etc/motd
+
+    - name: Make sure selinux is in permissive mode
+      selinux: policy=targeted state=permissive
+      register: selinux
+
+    - name: Force selinux relable at startup
+      command: touch /.autorelabel
+      when: selinux.changed
+
+  roles:
+    - { role: harden }
+
+  tasks:
+#    - name: Restart server after 1 minute
+#      command: /sbin/shutdown -r +1
+#      async: 0
+#      poll: 0
+#      ignore_errors: true
+#     when: update.changed or selinux.changed    # Always reboot for now.
+#      register: reboot
+
+#    - name: Wait 65 seconds
+#      pause: seconds=65
+#      when: reboot.changed
+
+#    - name: Wait for the server to finish rebooting
+#      sudo: no
+#      local_action: wait_for host="{{ inventory_hostname }}" search_regex=OpenSSH port=22 timeout=300
+#      when: reboot.changed
+
+    - name: Reboot this server.
+      reboot:
+
+    - name: Delete containers
+      command: podman container rm -a
+      ignore_errors: yes
+
+    - name: Delete old container images
+      command: podman rmi -a
+      ignore_errors: yes
+
+    - name: Pull repos
+      command: "podman pull atgreen/moxielogic-repos-{{ item }}:latest"
+      with_items:
+        - el7
+        - deb
+      ignore_errors: yes
+
+    - name: Kill containers
+      command: "podman kill moxielogic-repos-{{ item }}"
+      with_items:
+        - el7
+        - deb
+      ignore_errors: yes
+
+    - name: Remove containers
+      command: "podman rm moxielogic-repos-{{ item }}"
+      with_items:
+        - el7
+        - deb
+      ignore_errors: yes
+
+    - name: Run el7 repo container
+      command: podman run -d --name moxielogic-repos-el7 -p 7007:8443 -v /etc/pki/tls:/etc/pki/tls atgreen/moxielogic-repos-el7:latest
+
+    - name: Run deb repo container
+      command: podman run -d --name moxielogic-repos-deb -p 7114:8443 -v /etc/pki/tls:/etc/pki/tls atgreen/moxielogic-repos-deb:latest
+
+    - name: Show running containers
+      command: podman ps
+
+    - name: Build CaC content, scan and evaluate
+      shell: |
+        rm -rf content
+        git clone --depth=1 https://github.com/ComplianceAsCode/content.git
+        cd content/build
+        cmake ..
+        make fedora
+        oscap xccdf eval --profile=standard --report=report.html ssg-fedora-ds.xml || true
+        wget -qO - https://rl.gl/cli/rlgl-linux-amd64.tgz | tar --strip-components=2 -xvzf - ./rlgl/rlgl;
+        ./rlgl login --key={{ RLGL_KEY }} https://rl.gl
+        ./rlgl evaluate --id=$(./rlgl start) \
+          --policy=https://github.com/moxielogic/rlgl-repo-server-policy.git \ 
+          report.html || true
