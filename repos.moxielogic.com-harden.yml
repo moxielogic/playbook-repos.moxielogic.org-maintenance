@@ -107,3 +107,7 @@
         ./rlgl evaluate --id=$(./rlgl start) \
           --policy=https://github.com/moxielogic/rlgl-repo-server-policy.git \ 
           report.html || true
+      retries: 3
+      delay: 30
+      register: result
+      until: result is not failed
