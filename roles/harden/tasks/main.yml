@@ -148,7 +148,7 @@
     - NIST-800-171-3.5.6
     - PCI-DSS-Req-8.2.4
     - CJIS-5.6.2.1
-    
+
 # ---------------------------------------------------------------------------
 #
 # Disable Kernel Support for USB via Bootloader Configuration
@@ -167,7 +167,7 @@
       # Edit runtime setting
       # Correct the form of kernel command line for each installed kernel in the bootloader
       /sbin/grubby --update-kernel=ALL --args="nousb"
-    fi  
+    fi
 
 # ---------------------------------------------------------------------------
 #
@@ -311,7 +311,7 @@
     - NIST-800-171-3.1.11
     - PCI-DSS-Req-8.1.8
     - CJIS-5.5.6
-    
+
 # ---------------------------------------------------------------------------
 #
 # Build and Test AIDE database
@@ -360,6 +360,10 @@
     - NIST-800-53-SI-7
     - PCI-DSS-Req-11.5
     - CJIS-5.10.1.3
+  retries: 3
+  delay: 10
+  register: result
+  until: result is not failed
 
 - name: Check whether the stock AIDE Database exists
   stat:
@@ -537,7 +541,7 @@
     - NIST-800-171-3.3.1
     - PCI-DSS-Req-10.7
     - CJIS-5.4.1.1
-    
+
 # ---------------------------------------------------------------------------
 #
 # Record Events that Modify the System's Discretionary Access Controls - fchmodat
