@@ -3,7 +3,7 @@
   hosts: all
   gather_facts: true
 
-  tasks:
+  pre_tasks:
     - name: Make sure we have important packages
       yum:
         name:
@@ -105,7 +105,7 @@
         wget -qO - https://rl.gl/cli/rlgl-linux-amd64.tgz | tar --strip-components=2 -xvzf - ./rlgl/rlgl;
         ./rlgl login --key={{ RLGL_KEY }} https://rl.gl
         ./rlgl evaluate --id=$(./rlgl start) \
-          --policy=https://github.com/moxielogic/rlgl-repo-server-policy.git \ 
+          --policy=https://github.com/moxielogic/rlgl-repo-server-policy.git \
           report.html || true
       retries: 3
       delay: 30
